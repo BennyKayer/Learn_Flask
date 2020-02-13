@@ -1,0 +1,6 @@
+/REST_APIs_First/venv
+/Andrei/venv
+.vscode
+.pytest_cache
+/Andrei/__pycache__
+/REST_APIs_First/__pycache__
