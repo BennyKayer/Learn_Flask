@@ -4,3 +4,5 @@
 .pytest_cache
 /Andrei/__pycache__
 /REST_APIs_First/__pycache__
+/Flask-restful-section/__pycache__
+/Flask-restful-section/venv
