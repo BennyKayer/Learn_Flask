@@ -22,6 +22,12 @@ api.add_resource(Items, "/items")
 
 
 class Item(Resource):
+    # Parse to avoid adding unwanted fields
+    parser = reqparse.RequestParser()
+    parser.add_argument(
+        "price", help="Price must be provided", required=True, type=float
+    )
+
     @jwt_required()
     def get(self, name):
         """
@@ -38,16 +44,11 @@ class Item(Resource):
         return item, 200 if item else 404
 
     def post(self, name):
-        # Check for duplicate
+        # Check for duplicate <- error first approach
         if next(filter(lambda x: x["name"] == name, items), None) is not None:
             return {"message": f"An item with name {name} already exists"}, 400
 
-        # Parse to avoid adding unwanted fields
-        parser = reqparse.RequestParser()
-        parser.add_argument(
-            "price", help="Price must be provided", required=True, type=float
-        )
-        request_data = parser.parse_args()
+        request_data = Item.parser.parse_args()
         # Create new item and update db
         new_item = {"name": name, "price": request_data["price"]}
         items.append(new_item)
@@ -59,12 +60,7 @@ class Item(Resource):
         return {"message": f"{name} deleted"}, 200
 
     def put(self, name):
-        # Parse to erase unwanted fields
-        parser = reqparse.RequestParser()
-        parser.add_argument(
-            "price", type=float, required=True, help="You must provide a price"
-        )
-        request_data = parser.parse_args()
+        request_data = Item.parser.parse_args()
         # Check wheter item exists
         item = next(filter(lambda x: x["name"] == name, items), None)
         # Create / update accordingly
