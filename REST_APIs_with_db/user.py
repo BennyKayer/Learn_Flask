@@ -9,7 +9,7 @@ class User:
         self.password = password
 
     @classmethod
-    def find_by_username(self, username):
+    def find_by_username(cls, username):
         connection = sqlite3.connect("data.db")
         cursor = connection.cursor()
 
@@ -17,7 +17,7 @@ class User:
         result = cursor.execute(query, (username,))  # always tuple
         row = result.fetchone()
         if row:
-            user = self(*row)
+            user = cls(*row)
         else:
             user = None
 
@@ -25,7 +25,7 @@ class User:
         return user
 
     @classmethod
-    def find_by_id(self, _id):
+    def find_by_id(cls, _id):
         connection = sqlite3.connect("data.db")
         cursor = connection.cursor()
 
@@ -33,7 +33,7 @@ class User:
         result = cursor.execute(query, (_id,))  # always tuple
         row = result.fetchone()
         if row:
-            user = self(*row)
+            user = cls(*row)
         else:
             user = None
 
@@ -48,9 +48,19 @@ class UserRegister(Resource):
 
     def post(self):
         data = UserRegister.parser.parse_args()
-
         connection = sqlite3.connect("data.db")
         cursor = connection.cursor()
+
+        # Check whether user already exists
+        # My beautiful lengthy solution
+        # select_usernames = "SELECT * FROM users WHERE username=?"
+        # usernames = connection.execute(select_usernames, (data["username"],))
+        # if usernames.fetchone():
+        #     connection.close()
+        #     return {"message": "User already exists"}, 400
+        # This Insctructor short and simple
+        if User.find_by_username(data["username"]):
+            return {"message": "User already exists"}, 400
 
         query = "INSERT INTO users VALUES (NULL, ?, ?)"
         cursor.execute(query, (data["username"], data["password"]))
