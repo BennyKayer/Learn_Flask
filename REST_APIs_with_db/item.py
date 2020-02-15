@@ -5,6 +5,17 @@ from flask_jwt import jwt_required  # pylint: disable=import-error
 
 class Items(Resource):
     def get(self):
+        connection = sqlite3.connect("data.db")
+        cursor = connection.cursor()
+
+        query = "SELECT * FROM items"
+        result = cursor.execute(query)
+
+        items = []
+        for row in result:
+            items.append({"name": row[0], "price": row[1]})
+
+        connection.close()
         return {"items": items}, 200
 
 
@@ -35,16 +46,9 @@ class Item(Resource):
         connection.close()
         return row
 
-    def post(self, name):
-        # Check for duplicate <- error first approach
-        if next(filter(lambda x: x["name"] == name, items), None) is not None:
-            return {"message": f"An item with name {name} already exists"}, 400
-
-        request_data = Item.parser.parse_args()
-        # Create new item and update db
-        new_item = {"name": name, "price": request_data["price"]}
-
-        connection = sqlite3.connect()
+    @classmethod
+    def insert(cls, new_item):
+        connection = sqlite3.connect("data.db")
         cursor = connection.cursor()
 
         query = "INSERT INTO items VALUES (?,?)"
@@ -53,21 +57,59 @@ class Item(Resource):
         connection.commit()
         connection.close()
 
+    def post(self, name):
+        # Check for duplicate <- error first approach
+        if self.find_by_name(name):
+            return {"message": f"{name} already exists"}, 400
+
+        request_data = Item.parser.parse_args()
+        # Create new item and update db
+        new_item = {"name": name, "price": request_data["price"]}
+
+        try:
+            self.insert(new_item)
+        except:
+            return {"message": "Error occured during inserting"}, 500
+
         return new_item, 201
 
     def delete(self, name):
-        global items
-        items = list(filter(lambda x: x["name"] != name, items))
+        connection = sqlite3.connect("data.db")
+        cursor = connection.cursor()
+
+        query = "DELETE FROM items WHERE name=?"
+        cursor.execute(query, (name,))
+        connection.commit()
+
+        connection.close()
+
         return {"message": f"{name} deleted"}, 200
 
     def put(self, name):
         request_data = Item.parser.parse_args()
         # Check wheter item exists
-        item = next(filter(lambda x: x["name"] == name, items), None)
+        item = self.find_by_name(name)
         # Create / update accordingly
+        updated_item = {"name": name, "price": request_data["price"]}
         if item is None:
-            item = {"name": name, "price": request_data["price"]}
-            items.append(item)
+            try:
+                self.insert(updated_item)
+            except:
+                return {"message": "Error during inserting"}, 500
         else:
-            item.update(request_data)
-        return item, 200
+            try:
+                self.update(updated_item)
+            except:
+                return {"message": "Error during updating"}, 500
+        return updated_item, 200
+
+    @classmethod
+    def update(cls, item):
+        connection = sqlite3.connect("data.db")
+        cursor = connection.cursor()
+
+        query = "UPDATE items SET price=? WHERE name=?"
+        cursor.execute(query, (item["price"], item["name"]))
+
+        connection.commit()
+        connection.close()
