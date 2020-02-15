@@ -8,3 +8,7 @@
 /Flask-restful-section/venv
 /REST_APIs_with_db/venv
 /REST_APIs_with_db/__pycache__
+/sql-alchemy-section/__pycache__
+/sql-alchemy-section/venv
+SQL-alchemy-section/resources/__pycache__
+SQL-alchemy-section/models/__pycache__

@@ -1,8 +1,9 @@
 # Virtual Envs
 ## Create
 py -3 -m venv venv
-## Activate - must be in cmd
-venv\Scripts\activate
+## Activate 
+venv\Scripts\activate <- for cmd
+source venv/Scripts/activate <- for git bash
 # Flask's Env
 ## Running Server
 set FLASK_APP=server.py
