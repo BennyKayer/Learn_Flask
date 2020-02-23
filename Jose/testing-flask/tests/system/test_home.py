@@ -1,11 +1,10 @@
-from unittest import TestCase
-from src.app import app
+from tests.system.base_test import BaseTest
 import json
 
 
-class TestHome(TestCase):
+class TestHome(BaseTest):
     def test_get_home(self):
-        with app.test_client() as c:
+        with self.app() as c:
             res = c.get("/")
 
             self.assertEqual(res.status_code, 200)
@@ -14,7 +13,7 @@ class TestHome(TestCase):
             )
 
     def test_post_home(self):
-        with app.test_client() as c:
+        with self.app() as c:
             res = c.post("/")
 
             self.assertEqual(res.status_code, 405)
