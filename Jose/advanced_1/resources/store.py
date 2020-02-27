@@ -1,17 +1,25 @@
 from flask_restful import Resource
 from models.store import StoreModel
+from typing import Tuple
 
 
 class Store(Resource):
-    def get(self, name):
+    def get(self, name: str) -> Tuple:
         store = StoreModel.find_by_name(name)
         if store:
             return store.json()
         return {"message": "Store not found."}, 404
 
-    def post(self, name):
+    def post(self, name: str) -> Tuple:
         if StoreModel.find_by_name(name):
-            return {"message": "A store with name '{}' already exists.".format(name)}, 400
+            return (
+                {
+                    "message": "A store with name '{}' already exists.".format(
+                        name
+                    )
+                },
+                400,
+            )
 
         store = StoreModel(name)
         try:
@@ -21,7 +29,7 @@ class Store(Resource):
 
         return store.json(), 201
 
-    def delete(self, name):
+    def delete(self, name: str) -> Tuple:
         store = StoreModel.find_by_name(name)
         if store:
             store.delete_from_db()
@@ -30,5 +38,5 @@ class Store(Resource):
 
 
 class StoreList(Resource):
-    def get(self):
+    def get(self) -> Tuple:
         return {"stores": [x.json() for x in StoreModel.find_all()]}

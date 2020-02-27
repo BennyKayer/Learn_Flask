@@ -10,6 +10,7 @@ from flask_jwt_extended import (
 )
 from models.user import UserModel
 from blacklist import BLACKLIST
+from typing import Tuple
 
 _user_parser = reqparse.RequestParser()
 _user_parser.add_argument(
@@ -21,7 +22,7 @@ _user_parser.add_argument(
 
 
 class UserRegister(Resource):
-    def post(self):
+    def post(self) -> Tuple:
         data = _user_parser.parse_args()
 
         if UserModel.find_by_username(data["username"]):
@@ -40,14 +41,14 @@ class User(Resource):
     """
 
     @classmethod
-    def get(cls, user_id: int):
+    def get(cls, user_id: int) -> Tuple:
         user = UserModel.find_by_id(user_id)
         if not user:
             return {"message": "User not found."}, 404
         return user.json(), 200
 
     @classmethod
-    def delete(cls, user_id: int):
+    def delete(cls, user_id: int) -> Tuple:
         user = UserModel.find_by_id(user_id)
         if not user:
             return {"message": "User not found."}, 404
@@ -56,7 +57,7 @@ class User(Resource):
 
 
 class UserLogin(Resource):
-    def post(self):
+    def post(self) -> Tuple:
         data = _user_parser.parse_args()
 
         user = UserModel.find_by_username(data["username"])
@@ -66,23 +67,31 @@ class UserLogin(Resource):
             # identity= is what the identity() function did in security.py—now stored in the JWT
             access_token = create_access_token(identity=user.id, fresh=True)
             refresh_token = create_refresh_token(user.id)
-            return {"access_token": access_token, "refresh_token": refresh_token}, 200
+            return (
+                {"access_token": access_token, "refresh_token": refresh_token},
+                200,
+            )
 
         return {"message": "Invalid credentials!"}, 401
 
 
 class UserLogout(Resource):
     @jwt_required
-    def post(self):
-        jti = get_raw_jwt()["jti"]  # jti is "JWT ID", a unique identifier for a JWT.
+    def post(self) -> Tuple:
+        jti = get_raw_jwt()[
+            "jti"
+        ]  # jti is "JWT ID", a unique identifier for a JWT.
         user_id = get_jwt_identity()
         BLACKLIST.add(jti)
-        return {"message": "User <id={}> successfully logged out.".format(user_id)}, 200
+        return (
+            {"message": "User <id={}> successfully logged out.".format(user_id)},
+            200,
+        )
 
 
 class TokenRefresh(Resource):
     @jwt_refresh_token_required
-    def post(self):
+    def post(self) -> Tuple:
         current_user = get_jwt_identity()
         new_token = create_access_token(identity=current_user, fresh=False)
         return {"access_token": new_token}, 200
