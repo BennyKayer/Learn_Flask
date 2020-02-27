@@ -4,33 +4,35 @@ from models.item import ItemModel
 from typing import Tuple
 
 
+NO_BLANK = "{} cannot be left blank!"
+ITEM_NOT_FOUND = "Item not found."
+ITEM_EXISTS = "An item with name '{}' already exists."
+ITEM_DELETED = "Item Deleted"
+INSERTION_ERROR = "An error occurred while inserting the item."
+
+
 class Item(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument(
-        "price",
-        type=float,
-        required=True,
-        help="This field cannot be left blank!",
+        "price", type=float, required=True, help=NO_BLANK.format("price"),
     )
     parser.add_argument(
-        "store_id", type=int, required=True, help="Every item needs a store_id."
+        "store_id", type=int, required=True, help=NO_BLANK.format("store_id"),
     )
 
-    def get(self, name: str) -> Tuple:
+    @classmethod
+    def get(cls, name: str) -> Tuple:
         item = ItemModel.find_by_name(name)
         if item:
             return item.json(), 200
-        return {"message": "Item not found."}, 404
+        return {"message": ITEM_NOT_FOUND}, 404
 
+    @classmethod
     @fresh_jwt_required
-    def post(self, name: str) -> Tuple:
+    def post(cls, name: str) -> Tuple:
         if ItemModel.find_by_name(name):
             return (
-                {
-                    "message": "An item with name '{}' already exists.".format(
-                        name
-                    )
-                },
+                {"message": str(ITEM_EXISTS).format(name)},
                 400,
             )
 
@@ -41,19 +43,21 @@ class Item(Resource):
         try:
             item.save_to_db()
         except:
-            return {"message": "An error occurred while inserting the item."}, 500
+            return {"message": INSERTION_ERROR}, 500
 
         return item.json(), 201
 
+    @classmethod
     @jwt_required
-    def delete(self, name: str) -> Tuple:
+    def delete(cls, name: str) -> Tuple:
         item = ItemModel.find_by_name(name)
         if item:
             item.delete_from_db()
-            return {"message": "Item deleted."}, 200
-        return {"message": "Item not found."}, 404
+            return {"message": ITEM_DELETED}, 200
+        return {"message": ITEM_NOT_FOUND}, 404
 
-    def put(self, name: str) -> Tuple:
+    @classmethod
+    def put(cls, name: str) -> Tuple:
         data = Item.parser.parse_args()
 
         item = ItemModel.find_by_name(name)
@@ -69,5 +73,6 @@ class Item(Resource):
 
 
 class ItemList(Resource):
-    def get(self) -> Tuple:
+    @classmethod
+    def get(cls) -> Tuple:
         return {"items": [item.json() for item in ItemModel.find_all()]}, 200

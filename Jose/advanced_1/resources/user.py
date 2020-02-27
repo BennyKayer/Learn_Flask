@@ -11,27 +11,35 @@ from flask_jwt_extended import (
 from models.user import UserModel
 from blacklist import BLACKLIST
 from typing import Tuple
+from enum import Enum
+
+
+NO_BLANK = "This field cannot be blank."
+USER_EXISTS = "A user with that username already exists."
+CREATED = "User created successfully."
+NOT_FOUND = "User not found."
+DELETED = "User deleted."
+INVALID_CREDENTIALS = "Invalid credentials!"
+LOGOUT = "User <id={}> successfully logged out."
+
 
 _user_parser = reqparse.RequestParser()
-_user_parser.add_argument(
-    "username", type=str, required=True, help="This field cannot be blank."
-)
-_user_parser.add_argument(
-    "password", type=str, required=True, help="This field cannot be blank."
-)
+_user_parser.add_argument("username", type=str, required=True, help=NO_BLANK)
+_user_parser.add_argument("password", type=str, required=True, help=NO_BLANK)
 
 
 class UserRegister(Resource):
-    def post(self) -> Tuple:
+    @classmethod
+    def post(cls) -> Tuple:
         data = _user_parser.parse_args()
 
         if UserModel.find_by_username(data["username"]):
-            return {"message": "A user with that username already exists."}, 400
+            return {"message": USER_EXISTS}, 400
 
         user = UserModel(**data)
         user.save_to_db()
 
-        return {"message": "User created successfully."}, 201
+        return {"message": CREATED}, 201
 
 
 class User(Resource):
@@ -44,20 +52,21 @@ class User(Resource):
     def get(cls, user_id: int) -> Tuple:
         user = UserModel.find_by_id(user_id)
         if not user:
-            return {"message": "User not found."}, 404
+            return {"message": NOT_FOUND}, 404
         return user.json(), 200
 
     @classmethod
     def delete(cls, user_id: int) -> Tuple:
         user = UserModel.find_by_id(user_id)
         if not user:
-            return {"message": "User not found."}, 404
+            return {"message": NOT_FOUND}, 404
         user.delete_from_db()
-        return {"message": "User deleted."}, 200
+        return {"message": DELETED}, 200
 
 
 class UserLogin(Resource):
-    def post(self) -> Tuple:
+    @classmethod
+    def post(cls) -> Tuple:
         data = _user_parser.parse_args()
 
         user = UserModel.find_by_username(data["username"])
@@ -72,26 +81,28 @@ class UserLogin(Resource):
                 200,
             )
 
-        return {"message": "Invalid credentials!"}, 401
+        return {"message": INVALID_CREDENTIALS}, 401
 
 
 class UserLogout(Resource):
+    @classmethod
     @jwt_required
-    def post(self) -> Tuple:
+    def post(cls) -> Tuple:
         jti = get_raw_jwt()[
             "jti"
         ]  # jti is "JWT ID", a unique identifier for a JWT.
         user_id = get_jwt_identity()
         BLACKLIST.add(jti)
         return (
-            {"message": "User <id={}> successfully logged out.".format(user_id)},
+            {"message": LOGOUT.format(user_id)},
             200,
         )
 
 
 class TokenRefresh(Resource):
+    @classmethod
     @jwt_refresh_token_required
-    def post(self) -> Tuple:
+    def post(cls) -> Tuple:
         current_user = get_jwt_identity()
         new_token = create_access_token(identity=current_user, fresh=False)
         return {"access_token": new_token}, 200
