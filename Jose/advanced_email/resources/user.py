@@ -1,5 +1,5 @@
 from flask_restful import Resource
-from flask import request
+from flask import request, make_response, render_template
 from werkzeug.security import safe_str_cmp
 from flask_jwt_extended import (
     create_access_token,
@@ -34,7 +34,11 @@ class UserRegister(Resource):
         if UserModel.find_by_username(user.username):
             return {"message": USER_ALREADY_EXISTS}, 400
 
+        if UserModel.find_by_email(user.email):
+            return {"message": USER_ALREADY_EXISTS}, 400
+
         user.save_to_db()
+        user.send_confirmation_email()
 
         return {"message": CREATED_SUCCESSFULLY}, 201
 
@@ -109,5 +113,9 @@ class UserConfirm(Resource):
 
         user.activated = True
         user.save_to_db()
-        return {"message": USER_CONFIRMED}, 200
+        headers = {"Content-Type": "text/html"}
+        # return redirect("http://localhost:5000", 302)
+        return make_response(
+            render_template("confirmation_page.html", email=user.username), 200, headers
+        )
 
