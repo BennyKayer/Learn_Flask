@@ -10,6 +10,9 @@ flask-restful = "^0.3.8"
 flask-sqlalchemy = "^2.4.1"
 flask-jwt-extended = "^3.24.1"
 flask = "^1.1.1"
+marshmallow = "^3.5.0"
+flask-marshmallow = "^0.11.0"
+marshmallow-sqlalchemy = "^0.22.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
