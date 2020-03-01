@@ -1,13 +1,14 @@
 # Builtins
 from typing import List
+import os
 
 # 3rd party
 from requests import Response, post
 
 
 class MailGun:
-    MAILGUN_DOMAIN = "sandbox63f52a2fd65c43e1be80407d95199d3e.mailgun.org"
-    MAILGUN_API_KEY = "0e3b191d072a5fa7165fa6f5ce05924e-9dda225e-035365fd"
+    MAILGUN_DOMAIN = os.environ.get("MAILGUN_DOMAIN")
+    MAILGUN_API_KEY = os.environ.get("MAILGUN_API_KEY")
 
     FROM_TITLE = "stores rest api"
     FROM_EMAIL = "postmaster@sandbox63f52a2fd65c43e1be80407d95199d3e.mailgun.org"
