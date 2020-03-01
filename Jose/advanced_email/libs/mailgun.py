@@ -1,9 +1,21 @@
 # Builtins
 from typing import List
+from enum import Enum
 import os
 
 # 3rd party
 from requests import Response, post
+
+
+class MailGunException(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class ExceptionTypes(Enum):
+    API_KEY = "Failed to load MailGun API Key"
+    DOMAIN = "Failed to load MailGun domain"
+    CONFIRMATION_FAILURE = "Confirmation email failure, registration failed"
 
 
 class MailGun:
@@ -17,7 +29,15 @@ class MailGun:
     def send_email(
         cls, email: List[str], subject: str, text: str, html: str
     ) -> Response:
-        return post(
+        # not evaluates falsey values
+        # is None only works for None
+        # if environ.get can't find value it will set field to None
+        if cls.MAILGUN_API_KEY is None:
+            raise MailGunException(ExceptionTypes.API_KEY)
+        if cls.MAILGUN_DOMAIN is None:
+            raise MailGunException(ExceptionTypes.DOMAIN)
+
+        response = post(
             f"http://api.mailgun.net/v3/{cls.MAILGUN_DOMAIN}/messages",
             auth=("api", cls.MAILGUN_API_KEY),
             data={
@@ -28,4 +48,8 @@ class MailGun:
                 "html": html,
             },
         )
+
+        if response.status_code != 200:
+            raise MailGunException(ExceptionTypes.CONFIRMATION_FAILURE)
+        return response
 
