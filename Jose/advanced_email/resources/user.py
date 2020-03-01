@@ -1,6 +1,9 @@
-from flask_restful import Resource
+# Builtins
+import traceback
+
+# 3rd party
 from flask import request, make_response, render_template
-from werkzeug.security import safe_str_cmp
+from flask_restful import Resource
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
@@ -9,18 +12,23 @@ from flask_jwt_extended import (
     jwt_required,
     get_raw_jwt,
 )
+from werkzeug.security import safe_str_cmp
+
+# Local
+from blacklist import BLACKLIST
 from models.user import UserModel
 from schemas.user import UserSchema
-from blacklist import BLACKLIST
 
-USER_ALREADY_EXISTS = "A user with that username already exists."
-CREATED_SUCCESSFULLY = "User created successfully."
-USER_NOT_FOUND = "User not found."
-USER_DELETED = "User deleted."
+# Consts
+CREATED_SUCCESSFULLY = "Account created successfully, an emaill with an activation link has been sent to your email address"
+FAILED_TO_CREATE = "Failed to create"
 INVALID_CREDENTIALS = "Invalid credentials!"
-USER_LOGGED_OUT = "User <id={user_id}> successfully logged out."
 NOT_ACTIVATED = "Account was not activated"
+USER_ALREADY_EXISTS = "A user with that username already exists."
 USER_CONFIRMED = "User successfully confirmed"
+USER_DELETED = "User deleted."
+USER_LOGGED_OUT = "User <id={user_id}> successfully logged out."
+USER_NOT_FOUND = "User not found."
 
 user_schema = UserSchema()
 
@@ -37,10 +45,13 @@ class UserRegister(Resource):
         if UserModel.find_by_email(user.email):
             return {"message": USER_ALREADY_EXISTS}, 400
 
-        user.save_to_db()
-        user.send_confirmation_email()
-
-        return {"message": CREATED_SUCCESSFULLY}, 201
+        try:
+            user.save_to_db()
+            user.send_confirmation_email()
+            return {"message": CREATED_SUCCESSFULLY}, 201
+        except:
+            traceback.print_exc()
+            return {"message": FAILED_TO_CREATE}, 500
 
 
 class User(Resource):
@@ -66,7 +77,7 @@ class UserLogin(Resource):
     @classmethod
     def post(cls):
         user_json = request.get_json()
-        user_data = user_schema.load(user_json)
+        user_data = user_schema.load(user_json, partial=("email",))
 
         user = UserModel.find_by_username(user_data.username)
 
